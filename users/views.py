@@ -6,6 +6,7 @@ from django.contrib.messages.views import SuccessMessageMixin
 from django.views import View
 from django.contrib.auth.decorators import login_required
 from django.views import View
+
 from .forms import RegisterForm, LoginForm, UpdateUserForm, UpdateProfileForm
 
 
@@ -18,7 +19,7 @@ def home(request):
 class RegisterView(View):
     form_class = RegisterForm
     initial = {'key': 'value'}
-    template_name = 'configuration/users.html'
+    template_name = 'configuration/templates/configuration/users.html'
 
     def dispatch(self, request, *args, **kwargs):
         # will redirect to the home page if a user tries to access the register page while logged in

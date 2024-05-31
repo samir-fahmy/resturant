@@ -5,56 +5,18 @@ from django_datatables_view.base_datatable_view import BaseDatatableView
 from django.utils.html import escape
 from .forms import UserForm
 from django.contrib.auth.models import User
+from django.contrib.auth import authenticate
+from django.contrib.auth import views as auth_views #new
+from django.shortcuts import get_object_or_404
+
 from django.http import HttpResponse,JsonResponse 
 from django.views import View
 from .forms import RegisterForm
 from pyexpat.errors import messages
+from django.urls import reverse
+from django.core import serializers
+from django.http import QueryDict
 # Create your views here.
-
-# # class get_users(CreateView): 
-# #     def get(self,request,*args,**kwargs):
-# #         user=User.objects.all()
-# #         fileduse=UserForm()
-# #         context={
-# #           'user':user,
-# #           'filed':fileduse,
-# #          } 
-# #         return render(request,'configuration/users.html',context) 
-# #     def post(self,request,*args,**kwargs):
-# #         if not request.POST.get("username"):
-# #             context={
-# #              "status":0,
-# #              "message":"لا يوجد إسم مستخدم"   
-# #             }
-# #             return JsonResponse(context)
-# #     def post(self,request,*args,**kwargs):
-# #         if not request.POST.get("password1") or not request.POST.get("password2"):
-# #             context={
-# #              "status":0,
-# #              "message":"يجب عليك كتابة كلمة المرور"   
-# #             }
-# #             return JsonResponse(context)
-# #         print("first_name"*10)
-# #         if request.method=='POST':
-# #             obje=User.objects.create(
-# #                 first_name=request.POST.get('first_name'),
-# #                 last_name=request.POST.get('last_name'),                
-# #                 username=request.POST.get('username'),            
-# #                 password=request.POST.get('password1'),
-# #             )
-# #             if obje.id:
-# #                 context={
-# #                     "status":1,
-# #                     "message":"تم الحفظ"
-# #                 }
-# #             else:
-# #                 context={
-# #                     "status":0,
-# #                     "message":"خطأ فى الحفظ"
-# #                 }
-
-# #             return JsonResponse(context)
-
 class RegisterView(View):
     form_class = RegisterForm
     initial = {'key': 'value'}
@@ -69,30 +31,56 @@ class RegisterView(View):
         return super(RegisterView, self).dispatch(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
-        form = RegisterForm()
-        return render(request, self.template_name, {'form': form})
+        if 'id' in request.GET.keys():
+           if request.GET.get('id'):
+               data=User.objects.filter(pk=request.GET.get('id'))
+               result={'status':1,'data':serializers.serialize('json',data)}
+           else:
+              result={'status':0,'data':''}
+           return JsonResponse(result)
+        else:    
+         
+          form = RegisterForm()
+          return render(request, self.template_name, {'form': form})
 
     def post(self, request, *args, **kwargs):
         form = RegisterForm(request.POST)
-
+  
+        if request.POST.get('id'):
+            data=get_object_or_404(User,pk=int(request.POST.get('id')))
+            form=RegisterForm(request.POST,instance=data)
         if form.is_valid():
             form.save()
-
-            # username = form.cleaned_data.get('username')
-            # messages.success(request, f'Account created for {username}')
+                    
+            username = form.cleaned_data.get('username')
             context={
-               "status":1,
-               "message":"تم الحفظ",
+            "status":1,
+            "message":"تم الحفظ",
             }
         else:
             context={
-               "status":0,
-               "message":"خطأ فى الحفظ",
-              #  "message":form.errors,
+            "status":0,
+            "message":"خطأ فى الحفظ",
+            #  "message":form.errors,
             }    
         return JsonResponse(context)
 
-        # return render(request, self.template_name, {'form': form})
+    def delete(self,request,*args,**kwargs):
+        pk=int(QueryDict(request.body).get('id'))
+        if pk:
+          try:
+            data=get_object_or_404(User,pk=pk)
+            data.delete()
+            msg='تم الحذف'
+            result={'status':1,'message':msg}
+          except:
+            msg='خطأ بالحذف'
+            result={'status':0,'message':msg}
+        else:
+            msg='لا يوجد الصنف'
+            result={'status':0,'message':msg}
+          
+        return JsonResponse(result)    
 
 
 # def get_users(request):
@@ -112,7 +100,8 @@ class UserDataJson(BaseDatatableView):
         'id',
         'first_name',
         'last_name',
-        'username',                     
+        'username',
+        'action',                     
           ]
     # define column names that will be used in sorting
     # order is important and should be same as order of columns
@@ -122,16 +111,22 @@ class UserDataJson(BaseDatatableView):
         'id',
         'first_name',                     
         'last_name',
-        'username', 
+        'username',
+        'action', 
           ]
 
     # set max limit of records returned, this is used to protect our site if someone tries to attack our site
     # and make it return huge amount of data
     max_display_length = 500
-
+    count=0
     def render_column(self, row, column):
-        # We want to render user as a custom column
-         return super(UserDataJson, self).render_column(row, column)
+        if column == 'id':
+            self.count += 1
+            return self.count 
+        if column=='action':
+            return '<a class="edit_row" data-url="{3}" data-id="{0}" style="DISPLAY: -webkit-inline-box;"  data-toggle="tooltip" title="{1}"><i class="fa fa-edit"></i></a><a class="delete_row" data-url="{3}" data-id="{0}"  style="    DISPLAY: -webkit-inline-box;"     data-toggle="tooltip" title="{2}"><i class="fa fa-trash"></i></a>'.format(row.pk,"تعديل","حذف",reverse("users-register"))
+        else:                  
+           return super(UserDataJson, self).render_column(row, column)
 
     def filter_queryset(self, qs):
         # use parameters passed in GET request to filter queryset
