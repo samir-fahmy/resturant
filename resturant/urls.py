@@ -28,8 +28,9 @@ urlpatterns = [
     #path('', home.index, name='index'),    
     path('admin/', admin.site.urls),
     path('', include('configuration.urls')),
-    path('', include('users.urls')),
-   
+    path('', include('input.urls')),
+    path('', include('purchases.urls')),
+    path('', include('users.urls')),   
 
     path('login/', CustomLoginView.as_view(redirect_authenticated_user=True, template_name='users/login.html',
                                            authentication_form=LoginForm), name='login'),

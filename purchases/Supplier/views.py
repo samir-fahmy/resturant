@@ -3,39 +3,40 @@ from django.shortcuts import render,redirect
 from django.urls import reverse
 from django_datatables_view.base_datatable_view import BaseDatatableView 
 from django.utils.html import escape
-from .forms import ItemsForm
-from configuration.models import Items
+from .forms import SupplierForm
+from purchases.models import Supplier
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse,JsonResponse 
 from django.views import View
-from .forms import ItemsForm
+from purchases.models import Supplier
+from .forms import SupplierForm
 
 #from pyexpat.errors import 
 from django.core import serializers
 from django.http import QueryDict
-class Items_item(CreateView): 
+class Supplier_view(CreateView): 
     def get(self,request,*args,**kwargs):
         if 'id' in  request.GET.keys():
             if request.GET.get('id'):
-                data=Items.objects.filter(pk=request.GET.get('id'))
+                data=Supplier.objects.filter(pk=request.GET.get('id'))
                 result={'status':1,'data':serializers.serialize('json',data)}
             else: 
                 result={'status':0,'data':''} 
             return JsonResponse(result) 
         else:
 
-         Uni=Items.objects.all()
-         fileduse=ItemsForm()
+         Uni=Supplier.objects.all()
+         fileduse=SupplierForm()
          context={
-          'Items':Uni,
+          'Supplier':Uni,
           'filed':fileduse,
          } 
-        return render(request,'configuration/Items/Items.html',context) 
+        return render(request,'purchases/Supplier/Supplier.html',context) 
     def post(self,request,*args,**kwargs):
-        form = ItemsForm(request.POST)
-        if request.post.get('id'):
-            data=get_object_or_404(Items,pk=int(request.post.get('id')))
-            form=ItemsForm(request.POST,instance=data)                       
+        form = SupplierForm(request.POST)
+        if request.POST.get('id'):
+            data=get_object_or_404(Supplier,pk=int(request.post.get('id')))
+            form=SupplierForm(request.POST,instance=data)                       
         item=[]
         if form.is_valid():
             item=form.save()
@@ -47,12 +48,12 @@ class Items_item(CreateView):
                   result={'status':0,'message':'هناك خطأ بالتعديل'}
             else:      
              if item.id:
-                context={
+                result={
                     "status":1,
                     "message":"تم الحفظ"
                 }
              else:
-                context={
+                result={
                     "status":0,
                     "message":"خطأ فى الحفظ"
                 }
@@ -63,7 +64,7 @@ class Items_item(CreateView):
         pk=int(QueryDict(request.body).get('id'))
         if pk:
           try:
-            data=get_object_or_404(Items,pk=pk)
+            data=get_object_or_404(Supplier,pk=pk)
             data.delete()
             msg='تم الحذف'
             result={'status':1,'message':msg}
@@ -77,17 +78,17 @@ class Items_item(CreateView):
         return JsonResponse(result)    
         
 
-class ItemsJson(BaseDatatableView):
+class SupplierJson(BaseDatatableView):
   # The model we're going to show
-    model = Items
+    model = Supplier
    # define the columns that will be returned
     columns = [
         'id',
-        'unit',
-        'items_type',
-        'barcode',
         'name_lo',
         'name_fk',
+        'phone',
+        'is_stop',
+        'created',
         'action',                     
           ]
     # define column names that will be used in sorting
@@ -96,11 +97,11 @@ class ItemsJson(BaseDatatableView):
     # value like ''
     order_columns = [
         'id',
-        'unit',                     
-        'items_type',
-        'barcode', 
         'name_lo',
         'name_fk', 
+        'phone',
+        'is_stop',
+        'created',
         'action',                    
           ]
 
@@ -113,9 +114,9 @@ class ItemsJson(BaseDatatableView):
             self.count += 1
             return self.count
         if column == "action":
-             return '<a class="edit_row" data-url="{3}" data-id="{0}" style="DISPLAY: -webkit-inline-box;"  data-toggle="tooltip" title="{1}"><i class="fa fa-edit"></i></a><a class="delete_row" data-url="{3}" data-id="{0}"  style="    DISPLAY: -webkit-inline-box;"     data-toggle="tooltip" title="{2}"><i class="fa fa-trash"></i></a>'.format(row.pk,"تعديل","حذف",reverse("Items"))
+             return '<a class="edit_row" data-url="{3}" data-id="{0}" style="DISPLAY: -webkit-inline-box;"  data-toggle="tooltip" title="{1}"><i class="fa fa-edit"></i></a><a class="delete_row" data-url="{3}" data-id="{0}"  style="    DISPLAY: -webkit-inline-box;"     data-toggle="tooltip" title="{2}"><i class="fa fa-trash"></i></a>'.format(row.pk,"تعديل","حذف",reverse("Supplier"))
         else:
-            return super(ItemsJson, self).render_column(row, column)
+            return super(SupplierJson, self).render_column(row, column)
 
 
     def filter_queryset(self, qs):

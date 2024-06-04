@@ -14,7 +14,7 @@ def home(request):
     if request.user.is_authenticated:
       return render(request, 'index.html')
     else:
-        return redirect(to='/')
+        return redirect(to='login')
 
 class RegisterView(View):
     form_class = RegisterForm

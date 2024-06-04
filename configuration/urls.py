@@ -7,5 +7,4 @@ urlpatterns=[
     path('register/', RegisterView.as_view(), name='users-register'),
     path('',include('configuration.Unit.urls')),
     path('',include('configuration.itemtype.urls')),
-    path('',include('configuration.store.urls')),
-    path('',include('configuration.Items.urls')),]
+    path('',include('configuration.store.urls')),]
